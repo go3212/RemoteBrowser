@@ -12,8 +12,28 @@ export class DockerService {
   constructor() {
     this.docker = new Docker();
     fs.ensureDirSync(config.sessionsDir);
-    // Start building the worker image immediately
-    this.imageReady = this.ensureWorkerImage();
+    // Ensure network exists and start building the worker image
+    this.imageReady = this.initialize();
+  }
+
+  private async initialize(): Promise<void> {
+    await this.ensureNetwork();
+    await this.ensureWorkerImage();
+  }
+
+  private async ensureNetwork(): Promise<void> {
+    try {
+      const network = this.docker.getNetwork(config.networkName);
+      await network.inspect();
+      console.log(`✓ Docker network ${config.networkName} already exists`);
+    } catch (e) {
+      console.log(`Creating Docker network ${config.networkName}...`);
+      await this.docker.createNetwork({
+        Name: config.networkName,
+        Driver: 'bridge',
+      });
+      console.log(`✓ Docker network ${config.networkName} created`);
+    }
   }
 
   private async ensureWorkerImage(): Promise<void> {
@@ -147,6 +167,7 @@ export class DockerService {
         Mounts: mounts,
         ShmSize: 2 * 1024 * 1024 * 1024,
         ExtraHosts: ['host.docker.internal:host-gateway'],
+        NetworkMode: config.networkName,
       },
     });
 

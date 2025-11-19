@@ -10,6 +10,7 @@ services:
     environment:
       - PORT=3000
       - HOST_SESSIONS_DIR=${PWD}/sessions
+      # Use host-gateway for Linux compatibility
       - ORCHESTRATOR_HOST=host.docker.internal
       # Uncomment to enable authentication
       # - AUTH_PASSWORD=yourpassword
@@ -17,7 +18,10 @@ services:
       - ./sessions:/app/sessions
       - /var/run/docker.sock:/var/run/docker.sock
     extra_hosts:
+      # This makes host.docker.internal work on Linux
       - "host.docker.internal:host-gateway"
+    networks:
+      - remote-browser-net
 
   # This service ensures the worker image is built and tagged correctly
   worker-image:
@@ -27,4 +31,9 @@ services:
     container_name: remote-browser-worker-builder
     entrypoint: ["echo", "Worker image built"]
     profiles: ["tools"] # Don't run by default, just used for building: docker-compose build
+
+networks:
+  remote-browser-net:
+    name: remote-browser-net
+    driver: bridge
 
