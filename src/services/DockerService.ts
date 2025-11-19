@@ -162,7 +162,11 @@ export class DockerService {
       await old.remove({ force: true }).catch(() => {});
     } catch {}
 
-    const container = await this.docker.createContainer({
+    console.log(`Creating container ${containerName} with network ${config.networkName}...`);
+    
+    let container;
+    try {
+      container = await this.docker.createContainer({
       Image: 'remote-browser-worker:latest',
       name: containerName,
       Env: env,
@@ -176,11 +180,22 @@ export class DockerService {
         NetworkMode: config.networkName,
       },
     });
+    } catch (e: any) {
+      console.error(`Failed to create container ${containerName}:`, e.message);
+      throw new Error(`Failed to create worker container: ${e.message}`);
+    }
 
-    await container.start();
+    try {
+      await container.start();
+      console.log(`Container ${containerName} started successfully`);
+    } catch (e: any) {
+      console.error(`Failed to start container ${containerName}:`, e.message);
+      throw new Error(`Failed to start worker container: ${e.message}`);
+    }
 
     const inspect = await container.inspect();
     const port = inspect.NetworkSettings.Ports['3000/tcp'][0].HostPort;
+    console.log(`Worker container ${containerName} running on port ${port}`);
 
     return { containerName, port };
   }
