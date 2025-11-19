@@ -100,11 +100,13 @@ export class OrchestratorService {
          // Check health
          const isRunning = await this.dockerService.checkContainerHealth(session.workerContainerName);
          if (isRunning && session.wsEndpoint) {
+             console.log(`Session ${sessionId} is already active, reconnecting...`);
              // Ensure browser service is connected
              await this.browserService.connectToSession(sessionId, session.wsEndpoint).catch(() => {});
              return session;
          }
          // If not running, we will restart below
+         console.log(`Session ${sessionId} container is not running, restarting...`);
     }
 
     // Start worker
