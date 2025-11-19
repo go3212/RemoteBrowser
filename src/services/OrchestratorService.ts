@@ -156,6 +156,46 @@ export class OrchestratorService {
               await this.dockerService.stopContainer(session.workerContainerName);
           }
           
+          // Cleanup profile if it was NOT a named user profile (ephemeral)
+          // OR if we want to support explicit cleanup.
+          // Current requirement: "When a Session is ended. Its data is removed..."
+          // But user also said "I want to be able to restore...".
+          // Interpretation: Ephemeral sessions (no profile) should be clean.
+          // Named profiles should probably PERSIST for export unless explicitly deleted?
+          // BUT user query says: "And also when a Session is ended. Its data is removed..."
+          // This implies even for named profiles, maybe?
+          // Let's assume: Named profiles persist ON DISK until manually deleted, but session reference is cleaned.
+          // Wait, if "Its data is removed" refers to the session itself, that's already happening (container removed).
+          // If they mean the profile data:
+          // "I want to be able to restore... and also to export it... And also when a Session is ended. Its data is removed..."
+          // This usually means: Run session -> Write to profile -> End Session -> Data GONE from active run, but saved in profile?
+          // OR it means: The session is ephemeral, but I can export the profile BEFORE it dies?
+          // OR: I want a "clean slate" every time, unless I import?
+          
+          // Logic:
+          // If userProfile is provided, we keep it on disk (so it can be exported or reused).
+          // If no userProfile, DockerService mounts nothing (or temp), and it's gone when container dies.
+          
+          // User clarification: "I do not want to keep de data in the applicatiom... I want to be able to restore the profile from a zip... also to export it. And also when a Session is ended. Its data is removed..."
+          
+          // This implies:
+          // 1. Import Zip -> Creates Profile
+          // 2. Run Session (uses Profile)
+          // 3. Export Zip -> Download Profile
+          // 4. End Session -> DELETE Profile from Server (Security/Cleanup).
+          
+          if (session.userProfile && session.userProfile.name) {
+              const profilePath = path.join(config.sessionsDir, 'profiles', session.userProfile.name);
+              // We should delete the profile after the session ends to ensure "data is removed" from the application
+              // But we must ensure export happens BEFORE this or allows a grace period?
+              // If we delete immediately, they can't export AFTER stop.
+              // They must export WHILE running or we keep it for a short time?
+              // "And also when a Session is ended. Its data is removed" -> Strict cleanup.
+              
+              // We will delete the profile directory.
+              await fs.remove(profilePath).catch(console.error);
+          }
+          
           session.status = 'idle';
           session.workerContainerName = undefined;
           session.wsEndpoint = undefined;
