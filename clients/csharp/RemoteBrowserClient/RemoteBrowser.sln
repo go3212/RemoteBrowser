@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RemoteBrowserClient", "Client\RemoteBrowserClient.csproj", "{379DC8D5-5CDD-48A5-BB52-C0190452F8C3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RemoteBrowserClient.Tests", "Tests\RemoteBrowserClient.Tests.csproj", "{EB60E755-1953-43E6-9C8D-7EE882504C19}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{379DC8D5-5CDD-48A5-BB52-C0190452F8C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{379DC8D5-5CDD-48A5-BB52-C0190452F8C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{379DC8D5-5CDD-48A5-BB52-C0190452F8C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{379DC8D5-5CDD-48A5-BB52-C0190452F8C3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EB60E755-1953-43E6-9C8D-7EE882504C19}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EB60E755-1953-43E6-9C8D-7EE882504C19}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EB60E755-1953-43E6-9C8D-7EE882504C19}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EB60E755-1953-43E6-9C8D-7EE882504C19}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
