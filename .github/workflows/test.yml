@@ -1,0 +1,62 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      docker:
+        image: docker:dind
+        options: --privileged
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+    
+    - name: Install dependencies
+      run: npm install
+    
+    - name: Build worker image
+      run: npm run build:worker
+    
+    - name: Start server in background
+      run: |
+        npm start &
+        sleep 10
+      env:
+        PORT: 3000
+    
+    - name: Run quick smoke test
+      run: npm run test:quick
+      timeout-minutes: 2
+    
+    - name: Run health tests
+      run: npm run test:health
+      timeout-minutes: 2
+    
+    - name: Run error handling tests
+      run: npm run test:error
+      timeout-minutes: 2
+    
+    - name: Run session tests
+      run: npm run test:session
+      timeout-minutes: 5
+    
+    - name: Run browser tests
+      run: npm run test:browser
+      timeout-minutes: 10
+    
+    - name: Run interaction tests
+      run: npm run test:interaction
+      timeout-minutes: 10
+

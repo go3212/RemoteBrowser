@@ -11,6 +11,10 @@ export class BrowserService {
   private sessionContexts: Map<string, string[]> = new Map(); // sessionId -> contextIds
   private pageToSession: Map<string, string> = new Map(); // pageId -> sessionId
 
+  public isConnected(sessionId: string): boolean {
+    return this.browsers.has(sessionId);
+  }
+
   public async connectToSession(sessionId: string, wsEndpoint: string): Promise<void> {
     if (this.browsers.has(sessionId)) return;
 

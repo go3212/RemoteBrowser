@@ -120,13 +120,6 @@ export class OrchestratorService {
     const browserHost = isInDocker ? containerName : 'localhost';
     const browserPort = isInDocker ? '3000' : port; // Use internal port if in Docker
     
-    console.log(`Connecting to browser at ${browserHost}:${browserPort} (in Docker: ${isInDocker})`);
-    
-    // Wait for browser
-    if (!await this.waitForBrowser(browserHost, browserPort)) {
-        throw new Error('Browser failed to start');
-    }
-
     // Construct WS Endpoint with Launch Args
     let wsEndpoint = `ws://${browserHost}:${browserPort}/playwright`;
     if (session.launchOptions) {
@@ -150,8 +143,9 @@ export class OrchestratorService {
     session.wsEndpoint = wsEndpoint;
     session.status = 'active';
 
-    // Connect BrowserService
-    await this.browserService.connectToSession(sessionId, wsEndpoint);
+    // Don't wait for browser or connect yet - do it lazily on first operation
+    // This makes session creation instant
+    console.log(`Session ${sessionId} created, worker at ${browserHost}:${browserPort}`);
 
     return session;
   }
@@ -218,6 +212,36 @@ export class OrchestratorService {
       if (session) {
           session.lastUsedAt = new Date();
       }
+  }
+
+  // Ensure browser is ready and connected for a session
+  public async ensureBrowserReady(sessionId: string): Promise<void> {
+      const session = this.sessions.get(sessionId);
+      if (!session || !session.wsEndpoint) {
+          throw new Error('Session not found or not started');
+      }
+
+      // If already connected, just return
+      if (this.browserService.isConnected(sessionId)) {
+          return;
+      }
+
+      // Extract host and port from wsEndpoint
+      const match = session.wsEndpoint.match(/ws:\/\/([^:]+):(\d+)/);
+      if (!match) throw new Error('Invalid wsEndpoint');
+      
+      const browserHost = match[1];
+      const browserPort = match[2];
+
+      // Wait for browser to be ready
+      console.log(`Waiting for browser at ${browserHost}:${browserPort}...`);
+      if (!await this.waitForBrowser(browserHost, browserPort, 30)) {
+          throw new Error('Browser failed to start');
+      }
+
+      // Connect BrowserService
+      console.log(`Connecting to browser for session ${sessionId}...`);
+      await this.browserService.connectToSession(sessionId, session.wsEndpoint);
   }
 
   // Proxy browser actions

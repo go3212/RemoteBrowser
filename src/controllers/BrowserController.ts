@@ -32,6 +32,9 @@ export class BrowserController {
 
   public createContext = async (req: Request, res: Response) => {
       try {
+          // Ensure browser is ready before creating context (lazy initialization)
+          await this.orchestrator.ensureBrowserReady(req.params.id);
+          
           const { storageState } = req.body;
           const contextId = await this.browserService.createContext(req.params.id, storageState);
           this.orchestrator.touchSession(req.params.id);
