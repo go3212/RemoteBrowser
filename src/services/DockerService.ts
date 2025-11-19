@@ -84,7 +84,13 @@ export class DockerService {
 
   public async startWorkerContainer(session: Session): Promise<{ containerName: string; port: string }> {
     // Wait for image to be ready before starting container
-    await this.imageReady;
+    console.log(`Starting worker container for session ${session.id}...`);
+    try {
+      await this.imageReady;
+    } catch (e) {
+      console.error('Failed to ensure worker image is ready:', e);
+      throw new Error(`Worker image not available: ${e}`);
+    }
     
     const containerName = `browser-worker-${session.id}`;
     const mounts: Docker.MountConfig = [];

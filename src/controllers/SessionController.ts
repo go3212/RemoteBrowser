@@ -15,7 +15,8 @@ export class SessionController {
       const session = await this.orchestrator.createSession(requestBody);
       res.json(session);
     } catch (e: any) {
-      res.status(500).send(e.message);
+      console.error('Error creating session:', e);
+      res.status(500).send(e.message || e.toString());
     }
   };
 
@@ -64,7 +65,8 @@ export class SessionController {
       const session = await this.orchestrator.startSession(req.params.id);
       res.json(session);
     } catch (e: any) {
-      res.status(500).send(e.message);
+      console.error('Error starting session:', e);
+      res.status(500).send(e.message || e.toString());
     }
   };
 

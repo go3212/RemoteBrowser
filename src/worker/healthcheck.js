@@ -1,17 +1,28 @@
 const http = require('http');
+const { execSync } = require('child_process');
 
 const ORCHESTRATOR_URL = process.env.ORCHESTRATOR_URL;
 const ORCHESTRATOR_ID = process.env.ORCHESTRATOR_ID;
-// Default to localhost:3000 if not set, but orchestrator passes it.
-// Note: In Docker, we need to be careful about what 'localhost' means if ORCHESTRATOR_URL is not properly set.
+
+function killContainer() {
+  console.error('Healthcheck: Killing container...');
+  try {
+    // Kill all processes in the container (PID 1 and all children)
+    execSync('kill -TERM 1');
+  } catch (e) {
+    // If we can't kill PID 1, kill all node processes as fallback
+    try {
+      execSync('pkill -TERM node');
+    } catch (e2) {
+      // Last resort: exit with error code (container should restart or stop)
+      process.exit(1);
+    }
+  }
+}
 
 if (!ORCHESTRATOR_URL || !ORCHESTRATOR_ID) {
   console.error('Healthcheck: Missing ORCHESTRATOR_URL or ORCHESTRATOR_ID. Exiting.');
-  // If we can't check health, we shouldn't run?
-  // But maybe we are running manually?
-  // Let's just log and do nothing if vars are missing, or exit.
-  // The requirement says "Reads env vars... if unreachable... kills itself".
-  process.kill(1, 'SIGTERM');
+  killContainer();
 }
 
 console.log(`Healthcheck: Monitoring ${ORCHESTRATOR_URL} for ID ${ORCHESTRATOR_ID}`);
@@ -32,8 +43,8 @@ function check() {
         }
         const json = JSON.parse(data);
         if (json.orchestratorId !== ORCHESTRATOR_ID) {
-          console.error(`Healthcheck: Orchestrator ID mismatch! Expected ${ORCHESTRATOR_ID}, got ${json.orchestratorId}. shutting down.`);
-          process.kill(1, 'SIGTERM');
+          console.error(`Healthcheck: Orchestrator ID mismatch! Expected ${ORCHESTRATOR_ID}, got ${json.orchestratorId}. Shutting down.`);
+          killContainer();
         } else {
             failCount = 0; // Reset on success
         }
@@ -60,7 +71,7 @@ function handleFail() {
     failCount++;
     if (failCount >= MAX_FAILS) {
         console.error(`Healthcheck: Too many failures (${failCount}). Shutting down.`);
-        process.kill(1, 'SIGTERM');
+        killContainer();
     }
 }
 
