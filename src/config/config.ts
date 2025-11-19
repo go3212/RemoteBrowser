@@ -5,7 +5,7 @@ export const config = {
   orchestratorId: process.env.ORCHESTRATOR_ID || `orch-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
   sessionsDir: path.join(process.cwd(), 'sessions'),
   sessionTimeout: 1000 * 60 * 30, // 30 minutes inactive timeout
-  dockerImage: 'remote-browser-worker', // We will build this
+  dockerImage: 'browserless/chrome:latest', // Base image - we'll use Dockerfile to customize
   networkName: 'remote-browser-net', // Shared network
   authPassword: process.env.AUTH_PASSWORD || null,
   // For Docker-in-Docker or similar setups where the host path differs from container path

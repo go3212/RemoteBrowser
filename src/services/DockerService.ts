@@ -7,39 +7,33 @@ import AdmZip from 'adm-zip';
 
 export class DockerService {
   private docker: Docker;
-  private imageBuilt: boolean = false;
+  private imageReady: Promise<void>;
 
   constructor() {
     this.docker = new Docker();
     fs.ensureDirSync(config.sessionsDir);
+    // Start building the worker image immediately
+    this.imageReady = this.ensureWorkerImage();
   }
 
   private async ensureWorkerImage(): Promise<void> {
-    if (this.imageBuilt) return;
-
-    const imageName = config.dockerImage;
+    const imageName = 'remote-browser-worker:latest';
     
-    // Check if image exists
     try {
-      const images = await this.docker.listImages();
-      const imageExists = images.some(img => 
-        img.RepoTags && img.RepoTags.includes(imageName)
-      );
-      
-      if (imageExists) {
-        console.log(`Docker image ${imageName} already exists`);
-        this.imageBuilt = true;
-        return;
-      }
+      // Check if image already exists
+      const image = this.docker.getImage(imageName);
+      await image.inspect();
+      console.log(`✓ Docker image ${imageName} already exists`);
+      return;
     } catch (e) {
-      console.log(`Checking for image failed, will build: ${e}`);
+      console.log(`Building Docker image ${imageName} from Dockerfile...`);
     }
 
-    // Build image from Dockerfile
-    console.log(`Building Docker image ${imageName} from worker/Dockerfile...`);
+    // Build image from worker directory
     const workerDir = path.join(__dirname, '../worker');
+    const tarFs = require('tar-fs');
     
-    const tarStream = require('tar-fs').pack(workerDir, {
+    const tarStream = tarFs.pack(workerDir, {
       entries: ['Dockerfile', 'healthcheck.js', 'start-worker.sh']
     });
 
@@ -49,28 +43,28 @@ export class DockerService {
     });
 
     // Wait for build to complete
-    await new Promise((resolve, reject) => {
-      this.docker.modem.followProgress(stream, (err, res) => {
+    return new Promise((resolve, reject) => {
+      this.docker.modem.followProgress(stream, (err: any, res: any) => {
         if (err) {
-          console.error('Docker build failed:', err);
+          console.error('✗ Docker build failed:', err);
           reject(err);
         } else {
-          console.log('Docker image built successfully');
-          resolve(res);
+          console.log('✓ Docker image built successfully');
+          resolve();
         }
-      }, (event) => {
+      }, (event: any) => {
         if (event.stream) {
           process.stdout.write(event.stream);
+        } else if (event.error) {
+          console.error('Build error:', event.error);
         }
       });
     });
-
-    this.imageBuilt = true;
   }
 
   public async startWorkerContainer(session: Session): Promise<{ containerName: string; port: string }> {
-    // Ensure the worker image is built
-    await this.ensureWorkerImage();
+    // Wait for image to be ready before starting container
+    await this.imageReady;
     
     const containerName = `browser-worker-${session.id}`;
     const mounts: Docker.MountConfig = [];
@@ -143,7 +137,7 @@ export class DockerService {
     } catch {}
 
     const container = await this.docker.createContainer({
-      Image: config.dockerImage,
+      Image: 'remote-browser-worker:latest',
       name: containerName,
       Env: env,
       ExposedPorts: { '3000/tcp': {} },
