@@ -7,13 +7,71 @@ import AdmZip from 'adm-zip';
 
 export class DockerService {
   private docker: Docker;
+  private imageBuilt: boolean = false;
 
   constructor() {
     this.docker = new Docker();
     fs.ensureDirSync(config.sessionsDir);
   }
 
+  private async ensureWorkerImage(): Promise<void> {
+    if (this.imageBuilt) return;
+
+    const imageName = config.dockerImage;
+    
+    // Check if image exists
+    try {
+      const images = await this.docker.listImages();
+      const imageExists = images.some(img => 
+        img.RepoTags && img.RepoTags.includes(imageName)
+      );
+      
+      if (imageExists) {
+        console.log(`Docker image ${imageName} already exists`);
+        this.imageBuilt = true;
+        return;
+      }
+    } catch (e) {
+      console.log(`Checking for image failed, will build: ${e}`);
+    }
+
+    // Build image from Dockerfile
+    console.log(`Building Docker image ${imageName} from worker/Dockerfile...`);
+    const workerDir = path.join(__dirname, '../worker');
+    
+    const tarStream = require('tar-fs').pack(workerDir, {
+      entries: ['Dockerfile', 'healthcheck.js', 'start-worker.sh']
+    });
+
+    const stream = await this.docker.buildImage(tarStream, {
+      t: imageName,
+      dockerfile: 'Dockerfile'
+    });
+
+    // Wait for build to complete
+    await new Promise((resolve, reject) => {
+      this.docker.modem.followProgress(stream, (err, res) => {
+        if (err) {
+          console.error('Docker build failed:', err);
+          reject(err);
+        } else {
+          console.log('Docker image built successfully');
+          resolve(res);
+        }
+      }, (event) => {
+        if (event.stream) {
+          process.stdout.write(event.stream);
+        }
+      });
+    });
+
+    this.imageBuilt = true;
+  }
+
   public async startWorkerContainer(session: Session): Promise<{ containerName: string; port: string }> {
+    // Ensure the worker image is built
+    await this.ensureWorkerImage();
+    
     const containerName = `browser-worker-${session.id}`;
     const mounts: Docker.MountConfig = [];
 

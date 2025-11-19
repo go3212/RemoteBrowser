@@ -40,7 +40,9 @@ namespace RemoteBrowserClient
             var body = new { launchOptions = options, userProfile };
             var response = await PostAsync<SessionData>($"/sessions", body);
             
-            return new Session(response!.Id, this);
+            var session = new Session(response!.Id, this);
+            await session.StartAsync();
+            return session;
         }
 
         public Session GetSession(string sessionId)

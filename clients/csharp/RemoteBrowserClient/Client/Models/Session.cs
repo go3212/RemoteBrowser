@@ -16,7 +16,7 @@ namespace RemoteBrowserClient.Models
 
         public async Task StartAsync()
         {
-            await _client.PostAsync($"/sessions/{Id}/start", null);
+            await _client.PostAsync($"/sessions/{Id}/start", new { });
         }
 
         public async Task StopAsync()
