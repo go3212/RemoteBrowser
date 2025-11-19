@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -15,10 +16,17 @@ namespace RemoteBrowserClient
         private readonly string _baseUrl;
         private readonly JsonSerializerOptions _jsonOptions;
 
-        public RemoteBrowserClient(string baseUrl)
+        public RemoteBrowserClient(string baseUrl, string? password = null)
         {
             _baseUrl = baseUrl.TrimEnd('/');
             _httpClient = new HttpClient();
+            
+            if (!string.IsNullOrEmpty(password))
+            {
+                var authToken = Convert.ToBase64String(Encoding.ASCII.GetBytes($"admin:{password}"));
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authToken);
+            }
+
             _jsonOptions = new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,

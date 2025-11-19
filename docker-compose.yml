@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  orchestrator:
+    build: .
+    image: remote-browser-orchestrator
+    container_name: remote-browser-orchestrator
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - HOST_SESSIONS_DIR=${PWD}/sessions
+      - ORCHESTRATOR_HOST=host.docker.internal
+      # Uncomment to enable authentication
+      # - AUTH_PASSWORD=yourpassword
+    volumes:
+      - ./sessions:/app/sessions
+      - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # This service ensures the worker image is built and tagged correctly
+  worker-image:
+    build: 
+      context: ./src/worker
+    image: remote-browser-worker
+    container_name: remote-browser-worker-builder
+    entrypoint: ["echo", "Worker image built"]
+    profiles: ["tools"] # Don't run by default, just used for building: docker-compose build
+

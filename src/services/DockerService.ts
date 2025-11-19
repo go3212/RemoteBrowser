@@ -26,16 +26,24 @@ export class DockerService {
         zip.extractAllTo(extractPath, true);
       }
 
+      // If running in Docker, we need to mount the path from the HOST, not the container path.
+      // config.hostSessionsDir should be set to the path of sessionsDir on the host.
+      const mountSource = config.hostSessionsDir 
+        ? path.join(config.hostSessionsDir, `extracted-${session.id}`)
+        : extractPath;
+
       mounts.push({
         Target: '/session-profile',
-        Source: extractPath,
+        Source: mountSource,
         Type: 'bind',
         ReadOnly: false,
       });
     }
 
+    const orchestratorUrl = `http://${config.orchestratorHost}:${config.port}`;
+
     const env = [
-      `ORCHESTRATOR_URL=http://host.docker.internal:${config.port}`,
+      `ORCHESTRATOR_URL=${orchestratorUrl}`,
       `ORCHESTRATOR_ID=${config.orchestratorId}`,
       `SESSION_ID=${session.id}`,
       `CONNECTION_TIMEOUT=60000`,

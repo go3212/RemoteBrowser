@@ -7,5 +7,8 @@ export const config = {
   sessionTimeout: 1000 * 60 * 30, // 30 minutes inactive timeout
   dockerImage: 'remote-browser-worker', // We will build this
   networkName: 'remote-browser-net', // Shared network
+  authPassword: process.env.AUTH_PASSWORD || null,
+  // For Docker-in-Docker or similar setups where the host path differs from container path
+  hostSessionsDir: process.env.HOST_SESSIONS_DIR || null,
+  orchestratorHost: process.env.ORCHESTRATOR_HOST || 'host.docker.internal',
 };
-
