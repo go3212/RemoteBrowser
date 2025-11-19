@@ -33,6 +33,32 @@ export class SessionController {
     }
   };
 
+  public importUserProfile = async (req: Request, res: Response) => {
+      if (!req.file || !req.body.name) {
+          res.status(400).send('File and name required');
+          return;
+      }
+      try {
+          await this.orchestrator.importUserProfile(req.body.name, req.file.path);
+          res.json({ success: true });
+      } catch (e: any) {
+          res.status(500).send(e.message);
+      }
+  }
+
+  public exportUserProfile = async (req: Request, res: Response) => {
+      try {
+          const zipPath = await this.orchestrator.exportUserProfile(req.params.name);
+          if (!zipPath) {
+              res.status(404).send('Profile not found');
+              return;
+          }
+          res.download(zipPath, `${req.params.name}.zip`);
+      } catch (e: any) {
+          res.status(500).send(e.message);
+      }
+  }
+
   public startSession = async (req: Request, res: Response) => {
     try {
       const session = await this.orchestrator.startSession(req.params.id);

@@ -56,12 +56,12 @@ export class BrowserService {
       }
   }
 
-  public async createContext(sessionId: string): Promise<string> {
+  public async createContext(sessionId: string, storageState?: any): Promise<string> {
       const browser = this.browsers.get(sessionId);
       if (!browser) throw new Error(`Session ${sessionId} not connected`);
       
       const contextId = uuidv4();
-      const context = await browser.newContext();
+      const context = await browser.newContext(storageState ? { storageState } : undefined);
       this.contexts.set(contextId, context);
       
       // Track context for session
@@ -72,6 +72,12 @@ export class BrowserService {
       await this.saveSessionMetadata(sessionId);
 
       return contextId;
+  }
+
+  public async getContextState(contextId: string): Promise<any> {
+      const context = this.contexts.get(contextId);
+      if (!context) throw new Error(`Context ${contextId} not found`);
+      return await context.storageState();
   }
   
   private async saveSessionMetadata(sessionId: string) {

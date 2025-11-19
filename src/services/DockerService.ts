@@ -38,6 +38,21 @@ export class DockerService {
         Type: 'bind',
         ReadOnly: false,
       });
+    } else if (session.userProfile) {
+        // Persistent Profile Mount
+        const profilePath = path.join(config.sessionsDir, 'profiles', session.userProfile.name);
+        fs.ensureDirSync(profilePath);
+
+        const mountSource = config.hostSessionsDir 
+            ? path.join(config.hostSessionsDir, 'profiles', session.userProfile.name)
+            : profilePath;
+            
+         mounts.push({
+            Target: '/session-profile',
+            Source: mountSource,
+            Type: 'bind',
+            ReadOnly: false,
+          });
     }
 
     const orchestratorUrl = `http://${config.orchestratorHost}:${config.port}`;

@@ -35,9 +35,9 @@ namespace RemoteBrowserClient
             };
         }
 
-        public async Task<Session> CreateSessionAsync(BrowserLaunchOptions? options = null)
+        public async Task<Session> CreateSessionAsync(BrowserLaunchOptions? options = null, UserProfile? userProfile = null)
         {
-            var body = new { launchOptions = options };
+            var body = new { launchOptions = options, userProfile };
             var response = await PostAsync<SessionData>($"/sessions", body);
             
             return new Session(response!.Id, this);
@@ -46,6 +46,25 @@ namespace RemoteBrowserClient
         public Session GetSession(string sessionId)
         {
             return new Session(sessionId, this);
+        }
+
+        public async Task ImportUserProfileAsync(string name, string zipFilePath)
+        {
+             using var content = new MultipartFormDataContent();
+             using var fileStream = System.IO.File.OpenRead(zipFilePath);
+             using var fileContent = new StreamContent(fileStream);
+             
+             content.Add(fileContent, "file", System.IO.Path.GetFileName(zipFilePath));
+             content.Add(new StringContent(name), "name");
+             
+             var response = await _httpClient.PostAsync($"{_baseUrl}/profiles/import", content);
+             response.EnsureSuccessStatusCode();
+        }
+
+        public async Task ExportUserProfileAsync(string name, string saveToPath)
+        {
+             var bytes = await GetBytesAsync($"/profiles/{name}/export");
+             await System.IO.File.WriteAllBytesAsync(saveToPath, bytes);
         }
 
         internal async Task<T?> PostAsync<T>(string path, object body)

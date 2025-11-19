@@ -20,6 +20,11 @@ namespace RemoteBrowserClient.Models
             return new Page(response!.PageId, _client);
         }
 
+        public async Task<StorageState?> GetStorageStateAsync()
+        {
+            return await _client.GetAsync<StorageState>($"/contexts/{Id}/storageState");
+        }
+
         public async Task CloseAsync()
         {
             await _client.DeleteAsync($"/contexts/{Id}");

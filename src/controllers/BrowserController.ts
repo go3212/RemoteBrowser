@@ -32,9 +32,19 @@ export class BrowserController {
 
   public createContext = async (req: Request, res: Response) => {
       try {
-          const contextId = await this.browserService.createContext(req.params.id); // params.id is sessionId
+          const { storageState } = req.body;
+          const contextId = await this.browserService.createContext(req.params.id, storageState);
           this.orchestrator.touchSession(req.params.id);
           res.json({ contextId });
+      } catch (e: any) {
+          res.status(500).json({ error: e.message });
+      }
+  }
+
+  public getContextState = async (req: Request, res: Response) => {
+      try {
+          const state = await this.browserService.getContextState(req.params.contextId);
+          res.json(state);
       } catch (e: any) {
           res.status(500).json({ error: e.message });
       }

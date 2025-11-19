@@ -11,6 +11,7 @@ export const createBrowserRoutes = (browserController: BrowserController) => {
   // Context level
   router.post('/contexts/:contextId/pages', browserController.createPage);
   router.delete('/contexts/:contextId', browserController.closeContext);
+  router.get('/contexts/:contextId/storageState', browserController.getContextState);
 
   // Page level
   router.delete('/pages/:pageId', browserController.closePage);

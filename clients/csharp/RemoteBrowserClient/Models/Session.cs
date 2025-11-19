@@ -24,9 +24,9 @@ namespace RemoteBrowserClient.Models
             await _client.DeleteAsync($"/sessions/{Id}");
         }
 
-        public async Task<BrowserContext> CreateContextAsync()
+        public async Task<BrowserContext> CreateContextAsync(StorageState? storageState = null)
         {
-             var response = await _client.PostAsync<CreateContextResponse>($"/sessions/{Id}/contexts", new {});
+             var response = await _client.PostAsync<CreateContextResponse>($"/sessions/{Id}/contexts", new { storageState });
              return new BrowserContext(response!.ContextId, _client);
         }
         

@@ -38,6 +38,8 @@ export class OrchestratorService {
         launchOptions = request.launchOptions;
         activeTimeout = request.activeTimeout;
     }
+    
+    const userProfile = (request as CreateSessionRequest)?.userProfile;
 
     const id = uuidv4();
     const session: Session = {
@@ -46,7 +48,8 @@ export class OrchestratorService {
       lastUsedAt: new Date(),
       sessionBlobId,
       launchOptions,
-      activeTimeout
+      activeTimeout,
+      userProfile
     };
     this.sessions.set(id, session);
     return session;
@@ -56,6 +59,34 @@ export class OrchestratorService {
       const blobId = uuidv4() + '.zip';
       await fs.move(filePath, path.join(config.sessionsDir, blobId));
       return blobId;
+  }
+
+  public async importUserProfile(name: string, filePath: string): Promise<void> {
+      const profilePath = path.join(config.sessionsDir, 'profiles', name);
+      await fs.ensureDir(profilePath);
+      
+      // Extract zip to profile path
+      const AdmZip = require('adm-zip');
+      const zip = new AdmZip(filePath);
+      zip.extractAllTo(profilePath, true);
+      
+      // Cleanup uploaded file
+      await fs.remove(filePath);
+  }
+
+  public async exportUserProfile(name: string): Promise<string | null> {
+      const profilePath = path.join(config.sessionsDir, 'profiles', name);
+      if (!fs.existsSync(profilePath)) return null;
+      
+      const AdmZip = require('adm-zip');
+      const zip = new AdmZip();
+      zip.addLocalFolder(profilePath);
+      
+      const zipPath = path.join(config.sessionsDir, 'temp', `${name}-${uuidv4()}.zip`);
+      await fs.ensureDir(path.dirname(zipPath));
+      zip.writeZip(zipPath);
+      
+      return zipPath;
   }
 
   public async startSession(sessionId: string): Promise<Session> {

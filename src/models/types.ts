@@ -23,11 +23,20 @@ export interface Session {
   wsEndpoint?: string; 
   launchOptions?: BrowserLaunchOptions;
   activeTimeout?: number; // Timeout in milliseconds
+  userProfile?: {
+      name: string;
+      // Optional: If true, we create it if missing. Default true.
+      createIfMissing?: boolean;
+  };
 }
 
 export interface CreateSessionRequest {
   launchOptions?: BrowserLaunchOptions;
   activeTimeout?: number; // Timeout in milliseconds
+  userProfile?: {
+      name: string;
+      createIfMissing?: boolean;
+  };
 }
 
 export interface CreateSessionResponse {
