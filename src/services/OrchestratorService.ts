@@ -111,13 +111,22 @@ export class OrchestratorService {
     const { containerName, port } = await this.dockerService.startWorkerContainer(session);
     session.workerContainerName = containerName;
     
+    // Determine the host to connect to
+    // If running in Docker (detected by /.dockerenv file), use container name
+    // Otherwise use localhost (for local development)
+    const isInDocker = require('fs').existsSync('/.dockerenv');
+    const browserHost = isInDocker ? containerName : 'localhost';
+    const browserPort = isInDocker ? '3000' : port; // Use internal port if in Docker
+    
+    console.log(`Connecting to browser at ${browserHost}:${browserPort} (in Docker: ${isInDocker})`);
+    
     // Wait for browser
-    if (!await this.waitForBrowser(port)) {
+    if (!await this.waitForBrowser(browserHost, browserPort)) {
         throw new Error('Browser failed to start');
     }
 
     // Construct WS Endpoint with Launch Args
-    let wsEndpoint = `ws://localhost:${port}/playwright`;
+    let wsEndpoint = `ws://${browserHost}:${browserPort}/playwright`;
     if (session.launchOptions) {
         const params = new URLSearchParams();
         if (session.launchOptions.headless !== undefined) {
@@ -214,16 +223,23 @@ export class OrchestratorService {
       return this.browserService;
   }
 
-  private async waitForBrowser(port: string, retries = 20): Promise<boolean> {
+  private async waitForBrowser(host: string, port: string, retries = 30): Promise<boolean> {
+      console.log(`Waiting for browser at http://${host}:${port}/json/version...`);
       for (let i = 0; i < retries; i++) {
           try {
-              const res = await fetch(`http://localhost:${port}/json/version`);
-              if (res.ok) return true;
-          } catch (e) {
-              // ignore
+              const res = await fetch(`http://${host}:${port}/json/version`);
+              if (res.ok) {
+                  console.log(`Browser ready after ${i + 1} attempts`);
+                  return true;
+              }
+          } catch (e: any) {
+              if (i % 5 === 0) {
+                  console.log(`Attempt ${i + 1}/${retries}: Browser not ready yet (${e.message})`);
+              }
           }
-          await new Promise(r => setTimeout(r, 500));
+          await new Promise(r => setTimeout(r, 1000)); // Increased to 1 second
       }
+      console.error(`Browser failed to start after ${retries} attempts`);
       return false;
   }
 
