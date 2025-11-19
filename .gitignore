@@ -6,4 +6,5 @@ sessions
 .DS_Store
 coverage
 *.log
-
+bin
+obj
