@@ -10,6 +10,8 @@ namespace RemoteBrowserClient.Tests
     public class RemoteBrowserClientTests
     {
         private const string BaseUrl = "https://remotebrowser.miuratech.net";
+        //private const string BaseUrl = "http://localhost:3000";
+
 
         private string? GetPassword()
         {

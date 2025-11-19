@@ -1,53 +1,90 @@
-# Remote Browser C# Client
+# RemoteBrowserClient - C# Client Library
 
-This is a .NET 8 client library for the Remote Browser Orchestrator.
+A C# client library for interacting with the RemoteBrowser orchestrator service.
 
-## Prerequisites
+## Project Structure
 
-- .NET 8 SDK
-- Running Remote Browser Orchestrator (Node.js)
+```
+RemoteBrowserClient/
+├── Client/               # Class library
+│   ├── RemoteBrowserClient.cs
+│   ├── Models/
+│   │   ├── BrowserContext.cs
+│   │   ├── BrowserLaunchOptions.cs
+│   │   ├── Page.cs
+│   │   ├── Session.cs
+│   │   ├── StorageState.cs
+│   │   └── UserProfile.cs
+│   └── Dtos/
+│       ├── CreateContextResponse.cs
+│       ├── CreatePageResponse.cs
+│       ├── GetContextsResponse.cs
+│       ├── ResponseWrapper.cs
+│       └── SessionData.cs
+├── Tests/                # xUnit test project
+│   └── RemoteBrowserClientTests.cs
+└── RemoteBrowser.sln     # Solution file
+```
+
+## Features
+
+- Session management with browser launch options
+- Context and page creation
+- Page navigation and interaction (click, type, screenshot)
+- Storage state persistence
+- User profile import/export
+- Basic authentication support
 
 ## Usage
 
-1. Build the project:
-   ```bash
-   dotnet build
-   ```
+```csharp
+using RemoteBrowserClient;
+using RemoteBrowserClient.Models;
 
-2. Run the example:
-   ```bash
-   dotnet run
-   ```
+// Initialize client
+var client = new RemoteBrowserClient("https://remotebrowser.miuratech.net", "password");
 
-## Client API
+// Create and start session
+var session = await client.CreateSessionAsync(new BrowserLaunchOptions
+{
+    Headless = true
+});
 
-### `RemoteBrowserClient`
-- `CreateSessionAsync(BrowserLaunchOptions? options)`: Creates a new `Session`.
-  - `BrowserLaunchOptions`:
-    - `Headless`: bool
-    - `Args`: List<string> (e.g. `--start-maximized`)
-    - `Viewport`: { Width, Height }
-- `GetSession(string sessionId)`: Returns a `Session` object for an existing ID.
+// Create context
+var context = await session.CreateContextAsync();
 
-### `Session`
-- `StartAsync()`: Starts the browser worker.
-- `StopAsync()`: Stops the session.
-- `CreateContextAsync()`: Creates a new `BrowserContext` (Incognito window).
-- `GetContextsAsync()`: Lists available context IDs.
+// Create page
+var page = await context.CreatePageAsync();
 
-### `BrowserContext`
-- `CreatePageAsync()`: Creates a new `Page` (Tab).
-- `CloseAsync()`: Closes the context.
+// Navigate
+await page.NavigateAsync("https://example.com");
 
-### `Page`
-- `NavigateAsync(url)`
-- `ClickAsync(selector)`
-- `TypeAsync(selector, text)`
-- `ScreenshotAsync()`
-- `EvaluateAsync<T>(script)`
-- `GetContentAsync()`
-- `QuerySelectorAsync(selector)`
-- `QuerySelectorAllAsync(selector)`
-- `GetElementTextAsync(selector)`
-- `GetElementAttributeAsync(selector, attribute)`
-- `CloseAsync()`
+// Take screenshot
+var screenshot = await page.ScreenshotAsync();
+
+// Cleanup
+await page.CloseAsync();
+await context.CloseAsync();
+await session.StopAsync();
+```
+
+## Building
+
+```bash
+cd RemoteBrowserClient
+dotnet build RemoteBrowser.sln
+```
+
+## Running Tests
+
+```bash
+dotnet test RemoteBrowser.sln
+```
+
+Tests require the RemoteBrowser server to be running at `https://remotebrowser.miuratech.net`.
+
+## Authentication
+
+Set the password either:
+1. In the constructor: `new RemoteBrowserClient(url, "password")`
+2. Via environment variable: `REMOTE_BROWSER_PASSWORD`

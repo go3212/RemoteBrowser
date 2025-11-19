@@ -7,7 +7,14 @@
   "scripts": {
     "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
-    "test": "tsx test/session.test.ts",
+    "test": "npm run test:all",
+    "test:quick": "tsx test/quick-test.ts",
+    "test:all": "npm run test:health && npm run test:error && npm run test:session && npm run test:browser && npm run test:interaction",
+    "test:health": "tsx test/health.test.ts",
+    "test:session": "tsx test/session.test.ts",
+    "test:browser": "tsx test/browser.test.ts",
+    "test:interaction": "tsx test/interaction.test.ts",
+    "test:error": "tsx test/error-handling.test.ts",
     "build:worker": "docker build -t remote-browser-worker src/worker"
   },
   "dependencies": {
